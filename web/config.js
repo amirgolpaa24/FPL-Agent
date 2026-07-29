@@ -4,6 +4,6 @@
 // The ANON key is safe to ship in the frontend - Row Level Security protects data.
 // Leave both empty to run without accounts (everything still works).
 window.FPL_CONFIG = {
-  SUPABASE_URL: "",        // e.g. "https://abcdefgh.supabase.co"
-  SUPABASE_ANON_KEY: "",   // e.g. "eyJhbGciOi..."
+  SUPABASE_URL: "https://liwbycdmkyehzeomwwtl.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_LSLSO-tsv3hRR5Igsyyzew_labKT29G",
 };

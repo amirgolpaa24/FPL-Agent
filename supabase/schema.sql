@@ -28,6 +28,10 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+-- (drop-then-create so the whole script is safely re-runnable)
+drop policy if exists "read own profile"   on public.profiles;
+drop policy if exists "insert own profile" on public.profiles;
+drop policy if exists "update own profile" on public.profiles;
 create policy "read own profile"   on public.profiles for select using (auth.uid() = id);
 create policy "insert own profile" on public.profiles for insert with check (auth.uid() = id);
 create policy "update own profile" on public.profiles for update using (auth.uid() = id);
@@ -141,6 +145,10 @@ alter table public.live_players  enable row level security;
 alter table public.live_fixtures enable row level security;
 alter table public.news          enable row level security;
 
+drop policy if exists "public read player_gw"     on public.player_gw;
+drop policy if exists "public read live_players"  on public.live_players;
+drop policy if exists "public read live_fixtures" on public.live_fixtures;
+drop policy if exists "public read news"          on public.news;
 create policy "public read player_gw"     on public.player_gw     for select using (true);
 create policy "public read live_players"  on public.live_players  for select using (true);
 create policy "public read live_fixtures" on public.live_fixtures for select using (true);
@@ -149,5 +157,7 @@ create policy "public read news"          on public.news          for select usi
 
 -- Per-user data
 alter table public.recommendations enable row level security;
+drop policy if exists "read own recs"   on public.recommendations;
+drop policy if exists "insert own recs" on public.recommendations;
 create policy "read own recs"   on public.recommendations for select using (auth.uid() = user_id);
 create policy "insert own recs" on public.recommendations for insert with check (auth.uid() = user_id);
