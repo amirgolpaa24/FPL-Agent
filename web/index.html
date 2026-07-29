@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>FPL Agent</title>
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#14001a"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="FPL Agent"/>
+<link rel="apple-touch-icon" href="/icon-192.png"/>
+<link rel="icon" type="image/png" href="/icon-192.png"/>
+<script src="/config.js"></script>
+<style>
+  :root{
+    --purple:#37003c; --purple2:#2b0030; --green:#00ff87; --pink:#e90052;
+    --cyan:#04f5ff; --bg:#14001a; --panel:#22042b; --panel2:#2c0838;
+    --line:#3d1247; --text:#f3e9f6; --muted:#b79cc2;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+       background:radial-gradient(1200px 600px at 70% -10%,#2a0733,#14001a);
+       color:var(--text);min-height:100vh;}
+  a{color:var(--green);}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 20px 60px;}
+
+  /* header */
+  header{display:flex;align-items:center;gap:16px;padding:18px 20px;flex-wrap:wrap;
+         border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;
+         background:rgba(20,0,26,.82);backdrop-filter:blur(10px);}
+  .logo{font-weight:800;font-size:22px;letter-spacing:.3px;display:flex;align-items:center;gap:8px;}
+  .logo .dot{width:12px;height:12px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);}
+  .pill{font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;border:1px solid var(--line);
+        background:var(--panel);color:var(--muted);display:inline-flex;align-items:center;gap:6px;}
+  .pill.ok{color:var(--green);border-color:#0a5c3a;}
+  .pill.warn{color:#ffcf5c;border-color:#6b5417;}
+  .spacer{flex:1;}
+
+  /* layout */
+  .grid{display:grid;grid-template-columns:290px 1fr;gap:22px;margin-top:24px;}
+  @media(max-width:860px){.grid{grid-template-columns:1fr;}}
+  .panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
+         border-radius:16px;padding:18px;}
+  .panel h3{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);}
+
+  label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px;font-weight:600;}
+  input,select{width:100%;padding:9px 11px;border-radius:9px;border:1px solid var(--line);
+       background:#1b0522;color:var(--text);font-size:14px;}
+  input:focus,select:focus{outline:none;border-color:var(--green);}
+
+  .seg{display:flex;background:#1b0522;border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;}
+  .seg button{flex:1;border:0;background:transparent;color:var(--muted);padding:8px;border-radius:8px;
+              font-weight:700;font-size:13px;cursor:pointer;transition:.15s;}
+  .seg button.active{background:var(--green);color:#083; color:#04240f;}
+
+  .btn{width:100%;margin-top:16px;padding:12px;border:0;border-radius:11px;cursor:pointer;
+       background:linear-gradient(90deg,var(--green),#31d0ff);color:#04240f;font-weight:800;font-size:15px;
+       transition:.15s;box-shadow:0 6px 18px rgba(0,255,135,.18);}
+  .btn:hover{transform:translateY(-1px);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+  /* tabs */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+  .tab{padding:10px 16px;border-radius:11px;border:1px solid var(--line);background:var(--panel);
+       color:var(--muted);font-weight:700;cursor:pointer;font-size:14px;transition:.15s;}
+  .tab.active{background:var(--green);color:#04240f;border-color:var(--green);}
+  .tab .sub{display:block;font-size:10px;font-weight:500;opacity:.8;}
+
+  /* result cards */
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
+        border-radius:16px;padding:20px;margin-bottom:18px;}
+  .metrics{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  .metric{background:#1b0522;border:1px solid var(--line);border-radius:12px;padding:12px 16px;min-width:120px;}
+  .metric .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+  .metric .v{font-size:22px;font-weight:800;margin-top:3px;}
+  .reason{background:#1b0522;border-left:3px solid var(--green);border-radius:8px;padding:12px 15px;
+          color:#e8dcf0;line-height:1.5;font-size:14px;}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;
+       background:#1b0522;border:1px solid var(--line);color:var(--cyan);margin:3px 4px 0 0;}
+  .aibadge{background:linear-gradient(90deg,#7b2ff7,#f107a3);color:#fff;}
+
+  /* pitch */
+  .pitch{background:linear-gradient(#2e8b57,#175231);border-radius:14px;padding:20px 8px;
+         background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 44px,transparent 44px 88px);}
+  .row{display:flex;justify-content:center;flex-wrap:wrap;margin:8px 0;}
+  .player{position:relative;display:inline-flex;flex-direction:column;align-items:center;
+          margin:6px 7px;width:108px;transition:transform .15s ease;cursor:pointer;}
+  .player:hover{transform:scale(1.22);z-index:5;}
+  .player img,.player .shirt{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));}
+  .pcell{width:52px;height:52px;display:flex;align-items:center;justify-content:center;position:relative;}
+  .pname{background:var(--purple);color:#fff;font-size:11.5px;font-weight:700;padding:2px 8px;
+         border-radius:5px 5px 0 0;margin-top:3px;max-width:108px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pprice{background:#fff;color:var(--purple);font-size:11px;padding:1px 8px;border-radius:0 0 5px 5px;font-weight:700;}
+  /* captain / vice armband, overlaid on the shirt like FPL */
+  .capbadge{position:absolute;top:-5px;right:-5px;width:19px;height:19px;border-radius:50%;
+            background:#fff;color:var(--purple);font-size:11px;font-weight:800;
+            display:flex;align-items:center;justify-content:center;border:1.5px solid var(--purple);
+            box-shadow:0 1px 4px rgba(0,0,0,.5);}
+  .capbadge.v{background:var(--green);border-color:#0a5c3a;}
+  .xp{visibility:hidden;opacity:0;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
+      background:var(--green);color:#04240f;font-size:11px;font-weight:800;padding:2px 8px;border-radius:6px;
+      white-space:nowrap;transition:.15s;margin-bottom:5px;box-shadow:0 3px 8px rgba(0,0,0,.4);}
+  .player:hover .xp{visibility:visible;opacity:1;}
+  .bench{margin-top:12px;background:#1b0522;border-radius:12px;padding:10px;}
+  .bench .lbl{text-align:center;color:var(--muted);font-size:11px;letter-spacing:1px;margin-bottom:6px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;}
+  .swap{color:var(--green);font-weight:700;}
+
+  /* news editor */
+  .newsrow{display:grid;grid-template-columns:1.4fr 1fr 2fr auto;gap:8px;margin-bottom:8px;}
+  .newsrow input,.newsrow select{padding:7px 9px;font-size:13px;}
+  .rm{background:#3a0f18;border:1px solid #6b1f2c;color:#ff8a9c;border-radius:8px;cursor:pointer;padding:0 12px;font-weight:700;}
+  .addnews{background:#1b0522;border:1px dashed var(--line);color:var(--muted);border-radius:9px;
+           padding:8px;cursor:pointer;width:100%;font-weight:600;}
+
+  .spinner{width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--green);
+           border-radius:50%;animation:spin .8s linear infinite;display:inline-block;vertical-align:middle;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .err{background:#3a0f18;border:1px solid #6b1f2c;color:#ff9caa;border-radius:12px;padding:14px 16px;}
+  .muted{color:var(--muted);}
+  /* !important so .hidden beats inline display styles (e.g. modal flex) */
+  .hidden{display:none !important;}
+  .banner{background:#2a220a;border:1px solid #6b5417;color:#ffcf5c;border-radius:12px;padding:12px 15px;margin-bottom:16px;font-size:14px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span class="dot"></span> FPL Agent</div>
+  <span id="gwPill" class="pill">gameweek …</span>
+  <span id="srcPill" class="pill">…</span>
+  <div class="spacer"></div>
+  <span id="authPill" class="pill hidden" style="cursor:pointer;" title="Account">👤 …</span>
+  <span id="dbPill" class="pill">DB …</span>
+  <span id="llmPill" class="pill" style="cursor:pointer;" title="AI settings">🤖 …</span>
+  <button id="gearBtn" class="pill" style="cursor:pointer;border:1px solid var(--line);background:var(--panel);" title="Settings">⚙️</button>
+</header>
+
+<!-- Account modal (only shown when Supabase is configured in config.js) -->
+<div id="authModal" class="hidden" style="position:fixed;inset:0;z-index:50;
+     background:rgba(10,0,14,.75);backdrop-filter:blur(4px);display:flex;
+     align-items:center;justify-content:center;padding:20px;">
+  <div class="panel" style="max-width:420px;width:100%;">
+    <h3>👤 Account</h3>
+    <div id="authSignedOut">
+      <p class="muted" style="font-size:13px;">Sign in with a magic link — no password.
+        Your FPL team ID is remembered across devices.</p>
+      <label>Email</label>
+      <input id="authEmail" type="email" placeholder="you@example.com"/>
+      <button class="btn" id="authSend">Send magic link</button>
+      <p id="authMsg" class="muted" style="font-size:12px;"></p>
+    </div>
+    <div id="authSignedIn" class="hidden">
+      <p class="muted" style="font-size:13px;">Signed in as <b id="authWho"></b></p>
+      <label>My FPL team ID</label>
+      <input id="authTeamId" placeholder="e.g. 426507"/>
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button class="btn" id="authSaveTeam" style="margin-top:0;">Save</button>
+        <button class="btn" id="authSignOut" style="margin-top:0;background:#3a0f18;color:#ff8a9c;box-shadow:none;">Sign out</button>
+      </div>
+    </div>
+    <button class="btn" id="authClose" style="background:var(--panel);color:var(--muted);box-shadow:none;border:1px solid var(--line);">Close</button>
+  </div>
+</div>
+
+<!-- AI settings modal: the key is stored ONLY in this browser and sent
+     DIRECTLY to the provider - it never touches our server. -->
+<div id="settingsModal" class="hidden" style="position:fixed;inset:0;z-index:50;
+     background:rgba(10,0,14,.75);backdrop-filter:blur(4px);display:flex;
+     align-items:center;justify-content:center;padding:20px;">
+  <div class="panel" style="max-width:480px;width:100%;">
+    <h3>🤖 AI settings (stored on this device)</h3>
+    <p class="muted" style="font-size:13px;margin:4px 0 12px;">
+      Your API key is saved <b>only in this browser</b> and requests go
+      <b>directly from your device to the provider</b> — it is never sent to or
+      stored on our servers. Clear it any time.
+    </p>
+    <label>Provider</label>
+    <select id="setProvider">
+      <option value="openai">OpenAI</option>
+      <option value="anthropic">Anthropic</option>
+    </select>
+    <label>Model <span class="muted">(blank = default)</span></label>
+    <input id="setModel" placeholder="e.g. gpt-4o / claude-sonnet-4-20250514"/>
+    <label>API key</label>
+    <input id="setKey" type="password" placeholder="sk-… / sk-ant-…"/>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn" id="saveSettings" style="margin-top:0;">Save</button>
+      <button class="btn" id="clearSettings" style="margin-top:0;background:#3a0f18;color:#ff8a9c;box-shadow:none;">Clear key</button>
+      <button class="btn" id="closeSettings" style="margin-top:0;background:var(--panel);color:var(--muted);box-shadow:none;border:1px solid var(--line);">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div id="staleBanner" class="banner hidden"></div>
+
+  <div class="grid">
+    <!-- control panel -->
+    <div class="panel" style="align-self:start;position:sticky;top:88px;">
+      <h3>Assistant mode</h3>
+      <div class="seg" id="modeSeg">
+        <button data-mode="stats" class="active">📊 Stats</button>
+        <button data-mode="llm">🤖 AI</button>
+      </div>
+      <p class="muted" id="modeHelp" style="font-size:12px;margin:8px 0 0;">
+        Deterministic model over form, fixtures, availability &amp; value.
+      </p>
+
+      <div id="liveControls">
+        <label>Your FPL team ID <span class="muted">(optional)</span></label>
+        <input id="entryId" placeholder="e.g. 1234567"/>
+        <p class="muted" style="font-size:11px;margin-top:5px;">
+          Lets Captain / Lineup / Transfers use your real squad. Fetch it first with
+          <code>fetch_live.py --entry &lt;id&gt;</code>. Note: the FPL API only publishes your
+          picks <b>after</b> the gameweek deadline.
+        </p>
+      </div>
+
+      <div id="histControls" class="hidden">
+        <label>Season</label>
+        <select id="seasonSel"></select>
+        <label>Gameweek</label>
+        <input id="histGw" type="number" min="1" max="38" value="1"/>
+      </div>
+
+      <details style="margin-top:14px;">
+        <summary class="muted" style="cursor:pointer;font-size:12px;">Advanced</summary>
+        <label>Data source</label>
+        <select id="sourceSel">
+          <option value="live">Live current season</option>
+          <option value="historical">Historical (demo/backtest)</option>
+        </select>
+        <label>Scoring model</label>
+        <select id="formulaSel"></select>
+        <label>Budget (£m) — squad only</label>
+        <input id="budget" type="number" min="90" max="100" step="0.5" value="100"/>
+      </details>
+    </div>
+
+    <!-- main -->
+    <div>
+      <div class="tabs" id="tabs">
+        <div class="tab active" data-dec="squad">🧢 Initial Squad<span class="sub">pre-season</span></div>
+        <div class="tab" data-dec="captain">🧠 Captain<span class="sub">each week</span></div>
+        <div class="tab" data-dec="lineup">📋 Starting XI<span class="sub">each week</span></div>
+        <div class="tab" data-dec="transfers">🔁 Transfers<span class="sub">each week</span></div>
+      </div>
+
+      <div id="decHelp" class="muted" style="font-size:14px;margin-bottom:14px;"></div>
+
+      <!-- automatic news (AI mode) -->
+      <div id="newsPanel" class="card hidden">
+        <h3 style="margin:0 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);">
+          📰 Auto-gathered news <span class="tag aibadge">AI mode</span></h3>
+        <p class="muted" style="font-size:13px;margin:0;">
+          When you run, the assistant automatically pulls recent, performance-relevant news for these players —
+          FPL's official injury/availability flags plus football feeds (BBC, Guardian, Sky) — and weighs each item
+          by <b>source reliability</b>, how many <b>independent sources</b> corroborate it, its <b>recency</b>, and how
+          directly it affects minutes/points. No manual entry needed.</p>
+      </div>
+
+      <button class="btn" id="runBtn">Get recommendation</button>
+
+      <div id="output" style="margin-top:22px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const state = { mode:"stats", decision:"squad", source:"live", status:null, cache:{} };
+
+/* ---------------- BYOK settings: key lives ONLY in this browser ---------- */
+const AI = {
+  get(){ try{ return JSON.parse(localStorage.getItem("fpl_ai")||"{}"); }catch(e){ return {}; } },
+  set(cfg){ localStorage.setItem("fpl_ai", JSON.stringify(cfg)); refreshLlmPill(); },
+  clearKey(){ const c=AI.get(); delete c.key; AI.set(c); },
+  hasKey(){ return !!(AI.get().key); },
+};
+function refreshLlmPill(){
+  const c=AI.get();
+  const pill=$("#llmPill");
+  if(c.key){ pill.textContent="🤖 "+(c.provider||"openai")+" · key on device"; pill.className="pill ok"; }
+  else { pill.textContent="🤖 no key — tap ⚙️"; pill.className="pill warn"; }
+}
+function openSettings(){
+  const c=AI.get();
+  $("#setProvider").value=c.provider||"openai";
+  $("#setModel").value=c.model||"";
+  $("#setKey").value=c.key||"";
+  $("#settingsModal").classList.remove("hidden");
+}
+// Bind directly - this script runs at the end of <body>, so the elements
+// already exist (no DOMContentLoaded race).
+$("#gearBtn").onclick=openSettings;
+$("#llmPill").onclick=openSettings;
+$("#closeSettings").onclick=()=>$("#settingsModal").classList.add("hidden");
+$("#saveSettings").onclick=()=>{
+  AI.set({provider:$("#setProvider").value, model:$("#setModel").value.trim(),
+          key:$("#setKey").value.trim()});
+  $("#settingsModal").classList.add("hidden");
+};
+$("#clearSettings").onclick=()=>{ AI.clearKey(); $("#setKey").value=""; };
+
+/* ---------------- Accounts (Supabase, optional & free) ------------------- */
+let sb = null;
+async function initAuth(){
+  const cfg = window.FPL_CONFIG || {};
+  if(!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) return;   // accounts disabled
+  await new Promise((res, rej)=>{                            // load SDK on demand
+    const s=document.createElement("script");
+    s.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+    s.onload=res; s.onerror=rej; document.head.appendChild(s);
+  }).catch(()=>null);
+  if(!window.supabase) return;
+  sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  $("#authPill").classList.remove("hidden");
+  $("#authPill").onclick=()=>$("#authModal").classList.remove("hidden");
+  $("#authClose").onclick=()=>$("#authModal").classList.add("hidden");
+  $("#authSend").onclick=async()=>{
+    const email=$("#authEmail").value.trim();
+    if(!email) return;
+    const {error}=await sb.auth.signInWithOtp({email, options:{emailRedirectTo:location.origin}});
+    $("#authMsg").textContent = error ? ("Error: "+error.message) : "Check your email for the sign-in link.";
+  };
+  $("#authSignOut").onclick=async()=>{ await sb.auth.signOut(); refreshAuthUI(null); };
+  $("#authSaveTeam").onclick=async()=>{
+    const {data:{user}}=await sb.auth.getUser();
+    if(!user) return;
+    const tid=parseInt($("#authTeamId").value)||null;
+    await sb.from("profiles").upsert({id:user.id, fpl_team_id:tid, updated_at:new Date().toISOString()});
+    if(tid) $("#entryId").value=String(tid);
+    $("#authModal").classList.add("hidden");
+  };
+  sb.auth.onAuthStateChange((_e, session)=>refreshAuthUI(session?.user||null));
+  const {data:{user}}=await sb.auth.getUser();
+  refreshAuthUI(user);
+}
+async function refreshAuthUI(user){
+  const pill=$("#authPill");
+  if(!user){
+    pill.textContent="👤 sign in"; pill.className="pill warn";
+    $("#authSignedOut").classList.remove("hidden");
+    $("#authSignedIn").classList.add("hidden");
+    return;
+  }
+  pill.textContent="👤 "+(user.email||"account"); pill.className="pill ok";
+  $("#authSignedOut").classList.add("hidden");
+  $("#authSignedIn").classList.remove("hidden");
+  $("#authWho").textContent=user.email||user.id;
+  // pull saved team id -> prefill the sidebar
+  try{
+    const {data}=await sb.from("profiles").select("fpl_team_id").eq("id",user.id).single();
+    if(data&&data.fpl_team_id){
+      $("#authTeamId").value=String(data.fpl_team_id);
+      $("#entryId").value=String(data.fpl_team_id);
+    }
+  }catch(e){}
+}
+initAuth();
+
+/* Direct browser -> provider call. The key goes straight to the provider. */
+async function callProvider(system, prompt){
+  const c=AI.get();
+  if(!c.key) throw new Error("no_key");
+  if((c.provider||"openai")==="anthropic"){
+    const r=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":c.key,
+               "anthropic-version":"2023-06-01",
+               "anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:c.model||"claude-sonnet-4-20250514",max_tokens:2000,
+        temperature:0.2,system:system,messages:[{role:"user",content:prompt}]})});
+    if(!r.ok) throw new Error("Anthropic "+r.status+": "+(await r.text()).slice(0,200));
+    const j=await r.json();
+    return {text:(j.content||[]).map(b=>b.text||"").join(""), model:j.model||c.model||"claude"};
+  }
+  const r=await fetch("https://api.openai.com/v1/chat/completions",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer "+c.key},
+    body:JSON.stringify({model:c.model||"gpt-4o",temperature:0.2,
+      messages:[{role:"system",content:system},{role:"user",content:prompt}]})});
+  if(!r.ok) throw new Error("OpenAI "+r.status+": "+(await r.text()).slice(0,200));
+  const j=await r.json();
+  return {text:j.choices[0].message.content, model:j.model||c.model||"gpt-4o"};
+}
+// Each (decision, mode) pair remembers its own last result, so switching tabs
+// or toggling Stats/AI restores what you last computed there instead of losing it.
+function cacheKey(){ return state.decision + "|" + state.mode; }
+function showCached(){
+  const r = state.cache[cacheKey()];
+  if(r) render(r); else $("#output").innerHTML="";
+}
+
+const DEC_HELP = {
+  squad:"Build your opening 15 under budget — 2 GK, 5 DEF, 5 MID, 3 FWD, max 3 per club — weighing form, fixtures, availability and value.",
+  captain:"Pick who to captain (points doubled) and the vice. With your team ID it chooses from your squad.",
+  lineup:"Pick the best XI + bench + captain from your 15, across every legal formation.",
+  transfers:"Suggest transfers that raise expected points, respecting your bank, positions and the −4 hit."
+};
+
+async function boot(){
+  try{
+    const s = await fetch("/api/status").then(r=>r.json());
+    state.status = s;
+    state.source = s.live_available ? "live" : "historical";
+    $("#gwPill").textContent = s.gameweek!=null ? ("GW "+s.gameweek) : "no live GW";
+    $("#srcPill").textContent = s.live_available ? "🟢 live data" : "📚 historical only";
+    $("#srcPill").className = "pill " + (s.live_available ? "ok":"warn");
+    refreshLlmPill();  // BYOK: pill reflects the key on THIS device, not the server
+    const dbn = (s.database&&s.database.exists);
+    const rows = dbn ? (s.database.player_gw||0).toLocaleString() : 0;
+    $("#dbPill").textContent = dbn ? ("🗄️ DB "+rows+" rows") : "🗄️ no DB";
+    $("#dbPill").className = "pill " + (dbn ? "ok":"warn");
+
+    // formulas — default to FPL's official expected points on live data
+    const liveDefault = s.live_default_formula || s.default_formula;
+    const fs = $("#formulaSel"); fs.innerHTML="";
+    s.formulas.forEach(f=>{const o=document.createElement("option");o.value=f;
+      o.textContent=f+(f===liveDefault?" (default)":"");if(f===liveDefault)o.selected=true;fs.appendChild(o);});
+    state.scoreDesc = s.score_desc || "";
+    // seasons
+    const ss=$("#seasonSel"); ss.innerHTML="";
+    (s.seasons||[]).forEach(x=>{const o=document.createElement("option");o.value=x;o.textContent=x;ss.appendChild(o);});
+    if(s.seasons&&s.seasons.length) ss.value=s.seasons[s.seasons.length-1];
+
+    $("#sourceSel").value = state.source;
+    applySource();
+
+    if(s.stale){
+      const b=$("#staleBanner"); b.classList.remove("hidden");
+      b.innerHTML="📅 <b>The FPL API is still on the previous season</b> ("+s.freshness.events_finished+"/"+
+        s.freshness.events_total+" GWs finished, no upcoming fixtures yet). Recommendations use last season's data until the new season's fixtures are published — re-run <code>scripts/fetch_live.py</code> closer to kickoff.";
+    }
+    setDecision("squad");
+  }catch(e){ $("#output").innerHTML='<div class="err">Could not reach the API. Is the server running? '+e+'</div>'; }
+}
+
+function applySource(){
+  const live = $("#sourceSel").value==="live";
+  $("#liveControls").classList.toggle("hidden", !live);
+  $("#histControls").classList.toggle("hidden", live);
+  if(state.source && state.source!==$("#sourceSel").value){
+    state.cache={};           // data context changed - old results no longer apply
+    $("#output").innerHTML="";
+  }
+  state.source = $("#sourceSel").value;
+}
+$("#sourceSel").addEventListener("change", applySource);
+
+// mode toggle
+$("#modeSeg").addEventListener("click", e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  state.mode=b.dataset.mode;
+  [...$("#modeSeg").children].forEach(x=>x.classList.toggle("active",x===b));
+  $("#modeHelp").textContent = state.mode==="llm"
+    ? "AI weighs the numbers + auto-gathered news. Uses YOUR key (⚙️), straight from this device to the provider."
+    : "Deterministic model over form, fixtures, availability & value.";
+  $("#newsPanel").classList.toggle("hidden", state.mode!=="llm");
+  $("#runBtn").textContent = state.mode==="llm" ? "Ask the AI" : "Get recommendation";
+  showCached();  // restore this tab's result for the newly selected mode
+});
+
+// tabs
+$("#tabs").addEventListener("click", e=>{
+  const t=e.target.closest(".tab"); if(!t) return;
+  setDecision(t.dataset.dec);
+});
+function setDecision(d){
+  state.decision=d;
+  [...$("#tabs").children].forEach(x=>x.classList.toggle("active",x.dataset.dec===d));
+  $("#decHelp").textContent = DEC_HELP[d];
+  showCached();  // restore a previously computed result for this tab, if any
+}
+
+// run
+$("#runBtn").addEventListener("click", run);
+async function run(){
+  const btn=$("#runBtn"); btn.disabled=true;
+  $("#output").innerHTML='<div class="card"><span class="spinner"></span> &nbsp; Thinking…</div>';
+  const body={
+    decision:state.decision, mode:state.mode, source:$("#sourceSel").value,
+    formula:$("#formulaSel").value, budget:parseFloat($("#budget").value)||100,
+    entry_id:$("#entryId").value.trim()||null, news:[], crawl_news:true,
+  };
+  if(body.source==="historical"){ body.season=$("#seasonSel").value; body.gameweek=parseInt($("#histGw").value)||1; }
+  try{
+    let res;
+    if(state.mode==="llm"){
+      if(!AI.hasKey()){
+        $("#output").innerHTML='<div class="err">No AI key on this device. Tap ⚙️ to add your OpenAI/Anthropic key — it stays in your browser and goes directly to the provider, never to our server.</div>';
+        btn.disabled=false; return;
+      }
+      // BYOK: prepare on server -> call provider DIRECTLY from this device -> finalize
+      $("#output").innerHTML='<div class="card"><span class="spinner"></span> &nbsp; Gathering news &amp; building the brief…</div>';
+      const prep=await fetch("/api/llm/prepare",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json());
+      if(prep.error){ render(prep); btn.disabled=false; return; }
+      $("#output").innerHTML='<div class="card"><span class="spinner"></span> &nbsp; Asking your AI ('+(AI.get().provider||"openai")+') directly from this device…</div>';
+      let llm;
+      try{ llm=await callProvider(prep.system, prep.prompt); }
+      catch(e){
+        // provider failed -> graceful stats fallback with explanation
+        const stats=await fetch("/api/recommend",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...body,mode:"stats"})}).then(r=>r.json());
+        stats.llm_failed=true; stats.llm_error=String(e.message); stats.mode="llm";
+        render(stats); btn.disabled=false; return;
+      }
+      $("#output").innerHTML='<div class="card"><span class="spinner"></span> &nbsp; Validating &amp; rendering…</div>';
+      res=await fetch("/api/llm/finalize",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({payload:body, llm_text:llm.text, model:llm.model})}).then(r=>r.json());
+    } else {
+      res=await fetch("/api/recommend",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(r=>r.json());
+    }
+    if(!res.error) state.cache[cacheKey()]=res;   // remember per (tab, mode)
+    render(res);
+  }catch(e){ $("#output").innerHTML='<div class="err">Request failed: '+e+'</div>'; }
+  btn.disabled=false;
+}
+
+/* ---------------- rendering ---------------- */
+const SHIRT="https://fantasy.premierleague.com/dist/img/shirts/standard";
+const POSCOLOR={GK:"#eb1a4a",DEF:"#00c2b8",MID:"#04f5ff",FWD:"#e90052"};
+function jersey(code,pos){return `${SHIRT}/shirt_${code}${pos==="GK"?"_1":""}-66.png`;}
+function badge(code){return `https://resources.premierleague.com/premierleague/badges/70/t${code}.png`;}
+function shortName(n){const p=(n||"").split(" ");return p.length>1?p[0][0]+". "+p[p.length-1]:n;}
+
+function playerCard(p,cap,vice){
+  const code=p.team_code;
+  const color=POSCOLOR[p.position]||"#04f5ff";
+  // Fallback chain: club jersey -> club badge -> colored square, so there's
+  // always an icon even when a (e.g. newly promoted) team's kit art is missing.
+  const onerr = "if(!this.dataset.s){this.dataset.s=1;this.src='"+badge(code)+"';}"
+              + "else{this.style.display='none';this.parentNode.style.background='"+color+"';"
+              + "this.parentNode.style.borderRadius='8px';}";
+  let capBadge=""; if(p.name===cap)capBadge='<span class="capbadge">C</span>';
+  else if(p.name===vice)capBadge='<span class="capbadge v">V</span>';
+  const inner = code
+    ? `<img src="${jersey(code,p.position)}" onerror="${onerr}"/>`
+    : `<div class="shirt" style="background:${color};border-radius:8px;"></div>`;
+  const icon = `<div class="pcell">${inner}${capBadge}</div>`;
+  const xp = (p.expected_score!=null)?`<div class="xp">${(+p.expected_score).toFixed(2)} xP</div>`:"";
+  const price=(p.price!=null)?`£${p.price}m`:"";
+  return `<div class="player">${xp}${icon}<div class="pname" title="${(p.name||'').replace(/"/g,'')}">${shortName(p.name)}</div><div class="pprice">${price}</div></div>`;
+}
+function pitch(xi,bench,cap,vice){
+  const rows={GK:[],DEF:[],MID:[],FWD:[]}; (xi||[]).forEach(p=>(rows[p.position]||rows.MID).push(p));
+  let h='<div class="pitch">';
+  ["GK","DEF","MID","FWD"].forEach(pos=>{ if(rows[pos].length)
+    h+='<div class="row">'+rows[pos].map(p=>playerCard(p,cap,vice)).join("")+'</div>'; });
+  h+='</div>';
+  if(bench&&bench.length) h+='<div class="bench"><div class="lbl">BENCH</div><div class="row">'+
+    bench.map(p=>playerCard(p,cap,vice)).join("")+'</div></div>';
+  return h;
+}
+function metric(k,v){return `<div class="metric"><div class="k">${k}</div><div class="v">${v}</div></div>`;}
+function esc(s){return (s==null?"":String(s)).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+
+function render(res){
+  const out=$("#output");
+  if(res.error){ out.innerHTML='<div class="err">'+esc(res.error)+'</div>'; return; }
+  const meta=res._meta||{};
+  const anchor = (res.mode==="llm" && res.stats_anchor) ? res.stats_anchor : res;
+  const usingOfficial = (meta.formula==="fpl_official");
+  const scoreLegend = '<p class="muted" style="font-size:12px;margin:12px 2px 0;">'
+    + (usingOfficial
+        ? '<b>xP</b> = FPL’s <b>official</b> expected points for GW '+esc(meta.gameweek)+
+          ' (their <code>ep_next</code> figure — availability &amp; rotation already applied). Ranking uses this same number.'
+        : '<b>Score</b> = our composite model ('+esc(meta.formula)+') — a heuristic blend of season form, recent form, ICT, fixture &amp; availability. Historical data has no official FPL xP.')
+    + '</p>';
+  let notes="";
+  if(meta.squad_note) notes+='<div class="banner">'+esc(meta.squad_note)+'</div>';
+  if(res.llm_failed) notes+='<div class="banner">AI call failed ('+esc(res.llm_error)+') — showing the stats result.</div>';
+  const aiTag = res.mode==="llm" && !res.llm_failed ? '<span class="tag aibadge">AI ·'+esc(res.model||"")+'</span>' : '<span class="tag">stats</span>';
+
+  let html=notes;
+
+  if(state.decision==="squad" || state.decision==="lineup"){
+    // Prefer the AI's OWN squad/XI when it returned one (so the pitch matches
+    // the AI's reasoning); otherwise fall back to the stats anchor. Only ever
+    // pass arrays of player OBJECTS to the pitch - never raw name strings.
+    const dictsOnly = a => (Array.isArray(a) && a.length && typeof a[0]==="object") ? a : null;
+    const cap=res.captain||anchor.captain, vice=res.vice_captain||anchor.vice_captain;
+    const xi = dictsOnly(res.best_xi) || dictsOnly(anchor.best_xi) || dictsOnly(anchor.starting_xi) || [];
+    const bench = dictsOnly(res.bench) || dictsOnly(anchor.bench) || [];
+    const cost=(res.total_cost!=null?res.total_cost:anchor.total_cost);
+    const expXi=(res.expected_xi_points!=null?res.expected_xi_points:
+                 (anchor.expected_xi_points!=null?anchor.expected_xi_points:anchor.expected_total));
+    html+='<div class="card">'
+      + '<div class="metrics">'
+      + (cost!=null?metric("Squad cost","£"+cost+"m"):"")
+      + metric("Formation", res.formation||anchor.formation||"—")
+      + metric("Captain", shortName(cap||"—"))
+      + (expXi!=null?metric("Exp. XI pts",(+expXi).toFixed(1)):"")
+      + '</div>'
+      + '<div style="margin-bottom:6px;">'+aiTag+' <span class="tag">GW '+esc(meta.gameweek)+'</span>'
+      + (meta.used_real_squad?'<span class="tag">your squad</span>':'<span class="tag">'+(state.decision==="squad"?"new squad":"demo squad")+'</span>')+'</div>'
+      + (res.reasoning?'<div class="reason">'+esc(res.reasoning)+'</div>':'')
+      + ((res.ai_players_dropped&&res.ai_players_dropped.length)
+          ? '<p class="muted" style="font-size:12px;margin:8px 2px 0;">⚙️ Adjusted to fit FPL rules/budget — couldn’t include: '
+            + res.ai_players_dropped.map(esc).join(", ") + '.</p>' : '')
+      + '<div style="margin-top:16px;">'+pitch(xi,bench,cap,vice)+'</div>'
+      + '</div>';
+  }
+
+  else if(state.decision==="captain"){
+    html+='<div class="card"><div class="metrics">'
+      + metric("Captain", shortName(res.recommendation||"—"))
+      + (res.vice_captain?metric("Vice", shortName(res.vice_captain)):"")
+      + (res.confidence!=null?metric("Confidence",Math.round(res.confidence*100)+"%"):"")
+      + (res.expected_score!=null?metric("Exp. pts",(+res.expected_score).toFixed(2)):"")
+      + '</div>'
+      + '<div style="margin-bottom:8px;">'+aiTag+' <span class="tag">GW '+esc(meta.gameweek)+'</span>'
+      + (meta.used_real_squad?'<span class="tag">from your squad</span>':'<span class="tag">from player pool</span>')+'</div>'
+      + (res.reasoning?'<div class="reason">'+esc(res.reasoning)+'</div>':'')
+      + (res.key_factors&&res.key_factors.length?'<div style="margin-top:10px;">'+res.key_factors.map(f=>'<span class="tag">'+esc(f)+'</span>').join("")+'</div>':'');
+    const ranked=res.ranked||(res.stats_anchor&&res.stats_anchor.ranked);
+    if(ranked&&ranked.length){
+      html+='<table><tr><th>Player</th><th>Team</th><th>Exp</th><th>Season form</th><th>FDR</th></tr>'
+        + ranked.map(r=>'<tr><td>'+esc(r.name)+'</td><td>'+esc(r.team)+'</td><td>'+(+r.expected_score).toFixed(2)
+          +'</td><td>'+(r.season_form_points??"—")+'</td><td>'+(r.fixture_difficulty??"—")+'</td></tr>').join("")+'</table>';
+    }
+    html+='</div>';
+  }
+
+  else if(state.decision==="transfers"){
+    const sugg=res.suggestions||(res.stats_anchor&&res.stats_anchor.suggestions)||[];
+    const llmT=res.transfers||[];
+    html+='<div class="card"><div style="margin-bottom:10px;">'+aiTag+' <span class="tag">GW '+esc(meta.gameweek)+'</span>'
+      + (meta.used_real_squad?'<span class="tag">your squad</span>':'<span class="tag">demo squad</span>')+'</div>'
+      + (res.reasoning?'<div class="reason">'+esc(res.reasoning)+'</div>':'');
+    if(llmT.length){
+      html+='<table><tr><th>Out</th><th>In</th><th>Why</th></tr>'
+        + llmT.map(t=>'<tr><td>'+esc(t.out)+'</td><td class="swap">'+esc(t.in)+'</td><td class="muted">'+esc(t.reason||"")+'</td></tr>').join("")+'</table>';
+    }
+    if(sugg.length){
+      html+='<table style="margin-top:12px;"><tr><th>Out</th><th>In</th><th>Δ price</th><th>Net gain</th></tr>'
+        + sugg.map(s=>'<tr><td>'+esc(s.out)+' <span class="muted">('+s.out_expected+')</span></td>'
+          +'<td class="swap">'+esc(s.in)+' <span class="muted">('+s.in_expected+')</span></td>'
+          +'<td>'+(s.price_change>0?"+":"")+s.price_change+'</td><td>'+s.net_gain+'</td></tr>').join("")+'</table>';
+    }
+    if(!llmT.length && !sugg.length) html+='<p class="muted">No positive-value transfer — holding is optimal.</p>';
+    html+='</div>';
+  }
+
+  // auto-gathered news the AI weighed
+  const news=(meta.news_used||[]);
+  if(res.mode==="llm" && news.length){
+    const relColor=r=> r>=0.9?"#00ff87": r>=0.75?"#04f5ff":"#ffcf5c";
+    html+='<div class="card"><h3 style="margin:0 0 4px;font-size:13px;text-transform:uppercase;'
+      +'letter-spacing:.8px;color:var(--muted);">📰 News considered ('+meta.news_count+')</h3>'
+      +'<p class="muted" style="font-size:12px;margin:0 0 10px;">Auto-gathered &amp; weighed by reliability, corroboration and recency.</p>'
+      +'<table><tr><th>Player</th><th>Source</th><th>Reliability</th><th>Sources</th><th>When</th><th>Headline</th></tr>'
+      + news.map(n=>'<tr><td>'+esc(n.player)+'</td><td>'+esc(n.source)+'</td>'
+        +'<td style="color:'+relColor(n.reliability||0)+';font-weight:700;">'+Math.round((n.reliability||0)*100)+'%</td>'
+        +'<td>'+(n.corroboration||1)+'</td><td class="muted">'+esc(n.recency||"")+'</td>'
+        +'<td class="muted">'+esc((n.headline||"").slice(0,80))+'</td></tr>').join("")
+      +'</table></div>';
+  } else if(res.mode==="llm" && meta.news_count===0){
+    html+='<div class="card muted" style="font-size:13px;">📰 No performance-relevant news found for these players right now — recommendation is stats-driven.</div>';
+  }
+
+  html+=scoreLegend;
+  out.innerHTML=html;
+}
+
+boot();
+
+// PWA: register the service worker so iPhone users can Add to Home Screen
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").catch(()=>{});
+}
+</script>
+</body>
+</html>

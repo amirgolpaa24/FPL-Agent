@@ -1,0 +1,12 @@
+GW,heuristic_captain,heuristic_captain_pts,heuristic_captain_pts_doubled,best_possible_captain,best_possible_pts,best_possible_pts_doubled,field_average_pts,eligible_pool_size
+2,Star Winger,6,12,City Mid,7,14,2.6666666666666665,9
+3,Star Winger,4,8,Solid GK,5,10,2.625,8
+4,Star Winger,4,8,Star Winger,4,8,2.4444444444444446,9
+5,Star Striker,4,8,Star Winger,6,12,3.111111111111111,9
+6,Star Winger,4,8,City Mid,5,10,2.4444444444444446,9
+7,City Mid,4,8,Star Striker,5,10,2.7777777777777777,9
+8,Star Striker,6,12,Chelsea Def,6,12,3.6666666666666665,9
+9,Star Striker,5,10,Star Winger,7,14,2.7777777777777777,9
+10,Star Striker,3,6,City Mid,6,12,2.5555555555555554,9
+11,Star Striker,4,8,City Mid,7,14,3.6666666666666665,9
+12,City Mid,2,4,Star Striker,5,10,1.8888888888888888,9

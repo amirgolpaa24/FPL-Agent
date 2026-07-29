@@ -1,0 +1,16 @@
+# Render.com free-tier deployment (https://render.com - no card required).
+# Connect your GitHub repo in the Render dashboard and it picks this up,
+# or use "New + > Blueprint". Free web services sleep after 15 min idle and
+# wake on the next request (~30s cold start) - fine for a free app.
+
+services:
+  - type: web
+    name: fpl-agent
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9

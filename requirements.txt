@@ -1,0 +1,12 @@
+# Core data + dashboard
+pandas>=2.0
+streamlit>=1.30
+plotly>=5.18
+
+# Recommender API (only needed to run the FastAPI service in api.py)
+fastapi>=0.110
+uvicorn>=0.27
+pydantic>=2.6
+
+# LLM adapters + data fetching use requests (no provider SDKs required)
+requests>=2.31

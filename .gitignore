@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# SQLite database (regenerate with scripts/init_db.py) + WAL files
+data/fpl_agent.db
+data/fpl_agent.db-*
+# live snapshot + raw/processed data (regenerate via fetch/build scripts)
+data/live/
+data/raw/

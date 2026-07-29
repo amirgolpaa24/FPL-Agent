@@ -1,0 +1,41 @@
+# Scheduled news + data crawler (free on GitHub Actions).
+#
+# Runs every 6 hours year-round, plus every hour on Friday/Saturday mornings
+# UTC (when FPL deadlines almost always fall), so news is freshest exactly
+# when decisions are being made. Also runnable manually from the Actions tab.
+#
+# Repo secrets to set (Settings -> Secrets and variables -> Actions):
+#   SUPABASE_URL          - your Supabase project URL        (optional)
+#   SUPABASE_SERVICE_KEY  - service-role key                 (optional)
+#   NEWS_API_KEY          - NewsAPI key for extra coverage   (optional)
+# Without secrets it still runs and validates, just doesn't upsert anywhere.
+
+name: news-crawler
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"     # every 6 hours
+    - cron: "0 6-11 * * FRI"  # hourly Friday mornings UTC (deadline windows)
+    - cron: "0 6-11 * * SAT"  # hourly Saturday mornings UTC
+  workflow_dispatch: {}
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pandas requests
+
+      - name: Run crawler
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+        run: python scripts/crawl_news.py
