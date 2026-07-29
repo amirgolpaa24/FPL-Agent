@@ -493,7 +493,7 @@ async function run(){
     let res;
     if(state.mode==="llm"){
       if(!AI.hasKey()){
-        $("#output").innerHTML='<div class="err">No AI key on this device. Tap ⚙️ to add your OpenAI/Anthropic key — it stays in your browser and goes directly to the provider, never to our server.</div>';
+        $("#output").innerHTML='<div class="err">No AI key on this device yet. Tap ⚙️ to add your OpenAI/Anthropic key — it stays in your browser and goes directly to the provider, never to our server. <span class="muted">(Keys are saved per site &amp; per device, so you enter it once on each browser/app you use.)</span></div>';
         btn.disabled=false; return;
       }
       // BYOK: prepare on server -> call provider DIRECTLY from this device -> finalize
