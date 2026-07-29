@@ -212,20 +212,80 @@ def build_pool(
     return players
 
 
+ENTRY_TTL_SECONDS = 15 * 60  # re-fetch a user's team at most every 15 minutes
+_FPL_API = "https://fantasy.premierleague.com/api"
+
+
+def fetch_entry(entry_id: int, force: bool = False) -> dict:
+    """Fetch a user's FPL entry + current-GW picks straight from the FPL API,
+    with a short on-disk cache. This is what lets a regular user just type
+    their team ID in the app - no scripts, the SERVER does the fetching.
+
+    Raises LookupError if the team id doesn't exist. Missing picks (FPL only
+    publishes them after the gameweek deadline) are NOT an error here - the
+    caller checks for that and explains it."""
+    import time
+    import urllib.error
+    import urllib.request
+
+    path = os.path.join(_LIVE_DIR, f"entry_{entry_id}.json")
+    if not force and os.path.exists(path) and \
+            time.time() - os.path.getmtime(path) < ENTRY_TTL_SECONDS:
+        with open(path) as f:
+            return json.load(f)
+
+    def _get(url: str) -> dict:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (fpl-agent)"})
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            return json.loads(resp.read())
+
+    live = LiveData.load()
+    gw = live.current_gameweek()
+    try:
+        entry = _get(f"{_FPL_API}/entry/{entry_id}/")
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            raise LookupError(f"FPL team {entry_id} doesn't exist") from e
+        raise
+    try:
+        picks = _get(f"{_FPL_API}/entry/{entry_id}/event/{gw}/picks/")
+    except Exception:
+        picks = {}  # pre-deadline: FPL hasn't published picks yet
+
+    data = {"entry": entry, "picks": picks, "gameweek": gw}
+    try:
+        os.makedirs(_LIVE_DIR, exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(data, f)
+    except OSError:
+        pass  # caching is best-effort
+    return data
+
+
 def build_squad_from_entry(
     entry_id: int,
     gameweek: Optional[int] = None,
     prior_season: Optional[str] = None,
 ) -> Squad:
-    """Reconstruct YOUR 15-man squad + bank from a fetched entry_<id>.json."""
-    data = _load(f"entry_{entry_id}.json")
+    """Reconstruct YOUR 15-man squad + bank for a team id. Fetches live from
+    the FPL API (cached); falls back to a previously saved file if the network
+    call fails."""
+    try:
+        data = fetch_entry(int(entry_id))
+    except LookupError:
+        raise
+    except Exception:
+        data = _load(f"entry_{entry_id}.json")  # offline fallback if we have one
     live = LiveData.load()
     gw = gameweek or data.get("gameweek") or live.current_gameweek()
 
     by_id = {e["id"]: e for e in live.bootstrap["elements"]}
     picks = (data.get("picks") or {}).get("picks", [])
     if not picks:
-        raise ValueError(f"No picks found in entry_{entry_id}.json for GW{gw}.")
+        raise ValueError(
+            f"FPL hasn't published this team's GW{gw} picks yet - they only become "
+            "available after the gameweek deadline."
+        )
 
     players = []
     for pick in picks:

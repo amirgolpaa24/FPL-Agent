@@ -214,9 +214,10 @@
         <label>Your FPL team ID <span class="muted">(optional)</span></label>
         <input id="entryId" placeholder="e.g. 1234567"/>
         <p class="muted" style="font-size:11px;margin-top:5px;">
-          Lets Captain / Lineup / Transfers use your real squad. Fetch it first with
-          <code>fetch_live.py --entry &lt;id&gt;</code>. Note: the FPL API only publishes your
-          picks <b>after</b> the gameweek deadline.
+          Captain / Starting XI / Transfers then run on your <b>real squad</b> —
+          fetched automatically. Heads-up: FPL only publishes your picks
+          <b>after</b> each gameweek deadline, so a brand-new team appears here
+          once the first deadline passes.
         </p>
       </div>
 
@@ -434,7 +435,7 @@ async function boot(){
     if(s.stale){
       const b=$("#staleBanner"); b.classList.remove("hidden");
       b.innerHTML="📅 <b>The FPL API is still on the previous season</b> ("+s.freshness.events_finished+"/"+
-        s.freshness.events_total+" GWs finished, no upcoming fixtures yet). Recommendations use last season's data until the new season's fixtures are published — re-run <code>scripts/fetch_live.py</code> closer to kickoff.";
+        s.freshness.events_total+" GWs finished, no upcoming fixtures yet). Recommendations use last season's data until FPL publishes the new season — the app refreshes automatically, so just check back closer to kickoff.";
     }
     setDecision("squad");
   }catch(e){ $("#output").innerHTML='<div class="err">Could not reach the API. Is the server running? '+e+'</div>'; }

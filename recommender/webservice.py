@@ -169,14 +169,14 @@ def _context(payload: dict) -> dict:
     if decision in ("lineup", "transfers", "captain") and source == "live" and entry_id:
         try:
             squad = _user_squad(entry_id, gw, prior)
-        except FileNotFoundError:
-            squad_note = (f"No downloaded data for team {entry_id}. Run "
-                          f"scripts/fetch_live.py --entry {entry_id} first.")
-        except ValueError:
-            squad_note = ("Your team isn't available from the FPL API yet - it only "
-                          "publishes your picks after the gameweek deadline.")
-        except Exception as e:
-            squad_note = f"Could not load your squad: {e}"
+        except LookupError:
+            squad_note = (f"FPL team {entry_id} was not found - double-check your team ID "
+                          "(the number in fantasy.premierleague.com/entry/<ID>/...).")
+        except ValueError as e:
+            squad_note = str(e)  # e.g. picks not published until the GW deadline
+        except Exception:
+            squad_note = ("Couldn't reach the FPL servers to load your team just now - "
+                          "try again in a minute.")
 
     # captain candidate pool (deterministic ordering)
     candidates = None
