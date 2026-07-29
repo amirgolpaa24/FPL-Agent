@@ -8,6 +8,16 @@ reliability-weighted football news.
 Installable on iPhone as a PWA, runs on a **100% free stack**, and uses a
 **bring-your-own-key** AI model where your API key never leaves your device.
 
+## 🌐 Live app
+
+**[https://fpl-agent-myin.onrender.com](https://fpl-agent-myin.onrender.com)**
+
+📱 On iPhone: open the link in Safari → Share → **Add to Home Screen** to
+install it as an app.
+
+> ⏳ First load can take ~30–60 seconds if the app is waking up (free hosting
+> sleeps when idle) — after that it's fast.
+
 ## What it does
 
 | Decision | What you get |
